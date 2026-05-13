@@ -1,0 +1,268 @@
+# Cursor.md
+
+This file gives Cursor Code the context it needs to be useful on this project. Read this first on every session.
+
+---
+
+## Project Overview
+
+**Name:** AI Platform (multi-tenant agent platform)
+
+**What it is:** A self-hosted ChatGPT-style SaaS where users create custom AI agents with system prompts, knowledge bases (RAG), and tools. Built as a learning project that touches every layer of production AI engineering — from frontend streaming down to self-hosted GPU inference.
+
+**Why it exists:** This is a learning project, not a startup. The goal is for the developer to become fluent in production AI engineering by building every layer themselves. Code quality matters, but learning depth matters more.
+
+**Current phase:** [UPDATE THIS AS YOU GO — e.g., "Phase 2: Auth and Multi-Tenancy"]
+
+---
+
+## How Cursor Should Help on This Project
+
+This is the most important section. Read carefully.
+
+### The Core Principle
+
+The developer is learning. Your job is to **accelerate learning, not replace it**. Default to being a tutor who happens to write code, not a code generator who happens to explain things.
+
+### When asked to write code
+
+1. **First, ask if explanation is wanted.** For non-trivial code, default to explaining the *concept* first, then the code. Skip this only when the developer explicitly says "just write it" or it's truly boilerplate (imports, config files, etc.).
+
+2. **Explain *why*, not just *what*.** Don't just say "this uses `StreamingResponse`." Say "FastAPI's `StreamingResponse` sends data as it's generated rather than buffering — important here because LLM responses arrive token by token over seconds."
+
+3. **Flag the non-obvious.** If you're using a pattern that has alternatives (e.g., SSE vs WebSockets, sync vs async, Pydantic v1 vs v2 syntax), say which you picked and why.
+
+4. **Keep changes small.** Prefer 20 lines of code I can fully understand over 200 lines that "just work." If a feature genuinely needs 200 lines, break the explanation into chunks.
+
+5. **No silent magic.** Don't import libraries the developer hasn't seen without naming them. Don't add `# type: ignore` or `try/except: pass` without explanation. Don't introduce a new dependency without saying "this adds X to requirements."
+
+### When asked to debug
+
+1. **Make the developer think first.** Ask "what have you tried?" and "what's your hypothesis?" before diving in. If they've already tried things, skip this.
+2. **Explain the root cause, not just the fix.** A working patch with no explanation of why the bug existed is anti-learning.
+3. **Show the reasoning trail.** "The error says X, which means Y, which means we need to check Z" — don't just jump to the answer.
+
+### When the developer asks "what should I do next?"
+
+Refer to the project plan (see `PROJECT_PLAN.md` if it exists, otherwise ask). Stay within the current phase. Resist the temptation to suggest "we could also add..." features that aren't in the current phase. Scope discipline is part of what's being learned.
+
+### Things to push back on
+
+- **Premature optimization.** If they want to "add caching" before there's a performance problem, suggest waiting.
+- **Stack churn.** If they want to swap an established tool (e.g., FastAPI → Django) mid-project, push back hard.
+- **Skipping phases.** If they're in Phase 2 and asking about Kubernetes, redirect.
+- **Copy-paste mode.** If they're asking you to write entire features without engaging with the code, gently nudge them to read and explain back.
+
+### Things to *not* push back on
+
+- Asking for explanations of fundamentals, even basic ones. There are no dumb questions in learning.
+- Wanting to try multiple approaches to compare them. Experimentation is good.
+- Rewriting working code to understand it better. That's the point.
+
+---
+
+## Tech Stack (Maybe Change in Future if found something more optimized)
+
+These are chosen. Do not suggest swapping unless explicitly asked.
+
+### Backend
+- **Language:** Python 3.12+
+- **Web framework:** FastAPI
+- **ORM:** SQLAlchemy 2.0 (modern syntax with `Mapped` and `mapped_column`)
+- **Migrations:** Alembic
+- **Validation:** Pydantic v2 (use `model_config`, not `Config`)
+- **Auth:** JWT (likely `python-jose` + `passlib` for hashing)
+- **Background jobs:** Celery + Redis
+- **Testing:** pytest + httpx
+
+### Frontend
+- **Framework:** Next.js 14 (App Router, not Pages Router)
+- **Styling:** Tailwind CSS
+- **Components:** shadcn/ui
+- **Streaming:** Vercel AI SDK (`useChat` hook)
+- **Language:** TypeScript (strict mode)
+
+### Data
+- **Primary DB:** PostgreSQL 16
+- **Cache/queue:** Redis 7
+- **Vector DB:** Qdrant (self-hosted via Docker)
+
+### AI
+- **LLM API (early phases):** DeepSeek
+- **Agent framework:** LangGraph (introduced in Phase 5)
+- **Observability:** Langfuse (self-hosted via Docker)
+- **Self-hosted inference (Phase 7+):** vLLM with Qwen 2.5 7B or Llama 3.1 8B
+- **Multi-LoRA serving (Phase 8):** LoRAX
+
+### Infra
+- **Local:** Docker Compose
+- **Deploy (early):** Railway or Fly.io
+- **GPU rental (Phase 7+):** RunPod or Vast.ai
+- **Production (Phase 8):** Kubernetes (managed — DigitalOcean or GKE)
+
+---
+
+## Project Structure
+
+```
+ai-platform/
+├── backend/
+│   ├── app/
+│   │   ├── api/           # FastAPI routers
+│   │   ├── core/          # Config, auth, dependencies
+│   │   ├── db/            # SQLAlchemy models, session
+│   │   ├── schemas/       # Pydantic schemas
+│   │   ├── services/      # Business logic (chat, rag, agents)
+│   │   ├── workers/       # Celery tasks
+│   │   └── main.py        # FastAPI app entrypoint
+│   ├── alembic/           # DB migrations
+│   ├── tests/
+│   ├── pyproject.toml
+│   └── Dockerfile
+├── frontend/
+│   ├── app/               # Next.js App Router pages
+│   ├── components/
+│   ├── lib/
+│   └── package.json
+├── docker-compose.yml
+├── Cursor.md              # This file
+├── PROJECT_PLAN.md        # The phase-by-phase build plan
+└── README.md
+```
+
+When adding new files, follow this layout. Do not create top-level files in the project root unless they're truly project-wide (configs, READMEs, compose files).
+
+---
+
+## Code Style and Conventions
+
+### Python
+- **Formatter:** `ruff format` (not black — ruff is faster and handles both)
+- **Linter:** `ruff check`
+- **Type hints:** Required on all function signatures. Use modern syntax: `list[str]` not `List[str]`, `X | None` not `Optional[X]`.
+- **Async by default** for I/O. Use `async def` for endpoints, DB calls (with `asyncpg` + SQLAlchemy async), HTTP calls (`httpx.AsyncClient`).
+- **Imports:** Standard library, then third-party, then local. Ruff handles this.
+- **Docstrings:** Required on public functions. Google style.
+- **Error handling:** Don't swallow exceptions silently. Either handle specifically or let it propagate.
+
+### TypeScript
+- **Strict mode** in `tsconfig.json`.
+- **No `any`** unless explicitly justified in a comment.
+- **Server Components by default** in Next.js App Router; client components only when interactivity is needed (`'use client'`).
+- **API calls:** Use Vercel AI SDK for chat, plain `fetch` for everything else (no axios).
+
+### Database
+- **Migrations are sacred.** Never edit a migration after it's been committed. Generate new ones instead.
+- **All tables have `id` (UUID), `created_at`, `updated_at`.** Use a base mixin.
+- **Tenant isolation:** Every tenant-scoped table has a `user_id` (or `organization_id`) column. Every query filters by it. No exceptions.
+- **No raw SQL** unless there's a specific reason. Use SQLAlchemy ORM.
+
+### Git
+- **Commits:** Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`).
+- **Branches:** `main` is always deployable. Feature work happens on `phase-N-feature-name` branches.
+- **One phase per PR (loosely).** Don't merge half-finished phases.
+
+---
+
+## Project Phases (Status Tracker)
+
+Update this as you complete phases. Cursor should check current phase before suggesting work.
+
+- [ ] **Phase 0** — Streaming chat MVP (FastAPI + HTML, Anthropic API)
+- [ ] **Phase 1** — Persistent conversations (Postgres + Next.js)
+- [ ] **Phase 2** — Auth and multi-tenancy
+- [ ] **Phase 3** — Custom agents (system prompts, agent CRUD)
+- [ ] **Phase 4** — RAG (Qdrant, document upload, embeddings)
+- [ ] **Phase 5** — Tools and agent loops (LangGraph)
+- [ ] **Phase 6** — Observability (Langfuse, dashboards)
+- [ ] **Phase 7** — Self-hosted inference (vLLM on GPU)
+- [ ] **Phase 8** — Production infra (Kubernetes, multi-LoRA, evals)
+
+---
+
+## Useful Commands
+
+(Update as the project grows. Cursor can run these for context.)
+
+### Backend
+```bash
+# Run dev server
+cd backend && uvicorn app.main:app --reload
+
+# Run tests
+cd backend && pytest
+
+# Lint and format
+cd backend && ruff check . && ruff format .
+
+# Create a migration
+cd backend && alembic revision --autogenerate -m "describe change"
+
+# Run migrations
+cd backend && alembic upgrade head
+```
+
+### Frontend
+```bash
+# Dev server
+cd frontend && npm run dev
+
+# Type check
+cd frontend && npm run type-check
+
+# Build
+cd frontend && npm run build
+```
+
+### Infra
+```bash
+# Spin up everything (Postgres, Redis, Qdrant, Langfuse)
+docker compose up -d
+
+# Tear down
+docker compose down
+
+# View logs
+docker compose logs -f [service-name]
+```
+
+---
+
+## Things Cursor Should Never Do
+
+1. **Never commit secrets.** No API keys in code. `.env` is gitignored. Use environment variables.
+2. **Never write code that bypasses tenant isolation.** Every tenant-scoped query must filter by user/org ID.
+3. **Never suggest "rewrite this in X" mid-project.** Stack is locked.
+4. **Never silently install packages.** Always state what's being added and why.
+5. **Never use `print()` for logging.** Use the logger configured in `app/core/logging.py`.
+6. **Never write 500-line files when 5 files of 100 lines work better.** Keep modules small.
+7. **Never skip writing tests for new business logic.** Endpoints, services, and tools need tests.
+8. **Never assume the developer knows something.** Ask or briefly explain. Underestimating > overestimating here.
+
+---
+
+## Things Cursor Should Always Do
+
+1. **Read the current Phase before suggesting features.** Stay in scope.
+2. **Run the relevant tests after making changes.** Surface failures, don't hide them.
+3. **Explain trade-offs when there are multiple valid approaches.** Don't just pick one silently.
+4. **Suggest the simpler version first.** Optimize later when there's evidence it's needed.
+5. **Surface things that "look fine" but might bite later.** N+1 queries, missing indices, race conditions, leaked connections.
+6. **Use the project's existing patterns.** If `app/services/chat_service.py` exists with a certain shape, follow that shape for `agent_service.py`.
+
+---
+
+## Open Questions / Decisions Log
+
+(Append decisions here as they're made. Helps future Cursor — and future you — understand why things are the way they are.)
+
+- **[DATE]** — Picked Anthropic API over OpenAI for initial phases because of better streaming, larger context, and the developer wants Cursor experience.
+- **[DATE]** — Picked Qdrant over Pinecone for self-hostability and learning value.
+- **[DATE]** — Picked LangGraph over CrewAI/AutoGen because LangGraph is the most production-used agent framework in 2026 and has clearer state machine semantics.
+- **[DATE]** — Picked Celery over Temporal initially for simplicity; will reconsider at Phase 8.
+
+---
+
+## How to Update This File
+
+Treat this file as living documentation. When something significant changes (new conventions, finished phase, new dependency, gotcha discovered) — update it. Future-Cursor reads this on every session and only knows what's here.

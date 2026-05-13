@@ -1,0 +1,23 @@
+#1. Project metadata
+[project]
+name = "developer-survival"
+version = "0.1.0"
+description = "Platform for creeating custom AI agents"
+authors = [
+    { name = "Shaswat Shah", email = "shaswatshah51@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.31.0",
+    "fastapi>=0.100.0",
+    "pre-commit>=3.7.0"
+]
+
+# Tool configuration
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
