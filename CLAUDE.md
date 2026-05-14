@@ -12,7 +12,7 @@ This file gives Claude Code the context it needs to be useful on this project. R
 
 **Why it exists:** This is a learning project, not a startup. The goal is for the developer to become fluent in production AI engineering by building every layer themselves. Code quality matters, but learning depth matters more.
 
-**Current phase:** [UPDATE THIS AS YOU GO — e.g., "Phase 2: Auth and Multi-Tenancy"]
+**Current phase:** Phase 1 — Persistent Conversations (Phase 0 complete)
 
 ---
 
@@ -168,7 +168,7 @@ When adding new files, follow this layout. Do not create top-level files in the 
 
 Update this as you complete phases. Claude should check current phase before suggesting work.
 
-- [ ] **Phase 0** — Streaming chat MVP (FastAPI + HTML, Anthropic API)
+- [x] **Phase 0** — Streaming chat MVP (FastAPI + SSE, Next.js frontend, DeepSeek API)
 - [ ] **Phase 1** — Persistent conversations (Postgres + Next.js)
 - [ ] **Phase 2** — Auth and multi-tenancy
 - [ ] **Phase 3** — Custom agents (system prompts, agent CRUD)
