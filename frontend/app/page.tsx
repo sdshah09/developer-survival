@@ -1,12 +1,19 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { Menu, SquarePen, Plus, Mic, ChevronDown, MessageSquare, Sun, Moon } from 'lucide-react';
 import { useEffect, useRef, useState, FormEvent } from 'react';
 import { useTheme } from 'next-themes';
 
 export default function ChatUI() {
-  const { messages, sendMessage } = useChat();
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({
+      api: process.env.NEXT_PUBLIC_BACKEND_URL
+        ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`
+        : 'http://localhost:8000/chat',
+    }),
+  });
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -112,9 +119,7 @@ export default function ChatUI() {
                           : 'bg-white dark:bg-gray-800 border border-[#EAE4D9] dark:border-gray-700 text-gray-800 dark:text-gray-200'
                       }`}
                     >
-                      {m.parts.map((p, i) =>
-                        p.type === 'text' ? <span key={i}>{p.text}</span> : null,
-                      )}
+                      {m.parts.map((p, i) => (p.type === 'text' ? <span key={i}>{p.text}</span> : null))}
                     </div>
                   </div>
                 ))}
